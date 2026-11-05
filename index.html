@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script><title>Infrastructure Visit Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#EEF1EC;--sf:#FBFCFA;--ink:#17251F;--mu:#5B6B63;--ln:#D5DCD3;--ok:#0E7C66;--okbg:#E1F1EB;--pn:#B86F00;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101916;--sf:#17231F;--ink:#E6EEE9;--mu:#93A59B;--ln:#2A3A34;--ok:#3CC9A8;--okbg:#18322B;--pn:#E0A33A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101916;--sf:#17231F;--ink:#E6EEE9;--mu:#93A59B;--ln:#2A3A34;--ok:#3CC9A8;--okbg:#18322B;--pn:#E0A33A;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 "Instrument Sans",system-ui,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 48px}
+h1{font:800 clamp(26px,5vw,38px)/1.05 "Bricolage Grotesque",system-ui,sans-serif;margin:0 0 4px;letter-spacing:-.02em}
+.lead{color:var(--mu);margin:0 0 18px}
+.prog{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.big{font:800 34px/1 "Bricolage Grotesque",system-ui,sans-serif}
+.big small{font:500 15px "Instrument Sans",sans-serif;color:var(--mu);margin-left:6px}
+.bar{height:8px;background:var(--ln);border-radius:4px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+#banner{color:var(--pn);font-weight:500;margin:0 0 10px;min-height:0}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:9px 10px;width:100%}
+#q{grid-column:1/-1}
+:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+.bar2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px;color:var(--mu)}
+.btn{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:7px 12px;cursor:pointer}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:36px 1fr;gap:12px;background:var(--sf);border:1px solid var(--ln);border-left:4px solid var(--pn);border-radius:10px;padding:12px}
+.row.done{border-left-color:var(--ok);background:var(--okbg)}
+.tick{width:34px;height:34px;border-radius:8px;border:2px solid var(--mu);background:transparent;cursor:pointer;font-size:20px;line-height:1;color:#fff}
+.done .tick{background:var(--ok);border-color:var(--ok)}
+.tick:disabled{opacity:.5;cursor:not-allowed}
+.nm{font-weight:600;font-size:16px}
+.sub{color:var(--mu);font-size:14px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tags span{border:1px solid var(--ln);border-radius:20px;padding:1px 9px;font-size:12.5px;color:var(--mu)}
+.who{color:var(--ok);font-weight:500;font-size:14px}
+a{color:var(--ok)}
+textarea{margin-top:6px;min-height:52px;resize:vertical}
+[hidden]{display:none!important}.nmrow{max-width:360px;margin:0 0 12px}.empty{text-align:center;color:var(--mu);padding:32px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Infrastructure Visit Tracker</h1>
+<p class="lead">Find a site, check the details, tick it once visited. Everyone with the link sees the same progress.</p>
+<div id="banner" role="status"></div>
+<div class="nmrow"><input id="nm" maxlength="60" placeholder="Your name (shown on the sites you tick)" autocomplete="name" aria-label="Your name"></div><div id="app"><div class="prog"><div class="big"><span id="vc">0</span><small id="vt"></small></div><div class="bar"><i id="pb"></i></div></div>
+<div class="filters">
+<input id="q" type="search" placeholder="Search outlet, address, postcode or site ID" aria-label="Search">
+<select id="st" aria-label="State"></select><select id="di" aria-label="District"></select>
+<select id="sp" aria-label="Service provider"></select><select id="it" aria-label="Infrastructure type"></select>
+<select id="vs" aria-label="Visit status"><option value="">All sites</option><option value="p">Not visited</option><option value="v">Visited</option></select>
+</div>
+<div class="bar2"><span id="cnt"></span><button class="btn" id="exp">Export visited (CSV)</button></div>
+<ul id="list"></ul>
+<div class="empty" id="more" hidden><button class="btn" id="mb">Show more</button></div></div>
+</div>
+<script>
+const SUPABASE_URL='https://tkkdvksyemirruwpulde.supabase.co';
+const SUPABASE_KEY='sb_publishable_hjM2twi6352gS_sgeUoZHw_GYQXA3Su';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}});
+const $=s=>document.querySelector(s);
+const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let SITES=[],visits={},names={},db=true,shown=100,myName='';
+const map=r=>({id:r.id,sp:r.service_provider||'',it:r.infra_type||'',pt:r.pudo_type||'',n:r.outlet_name||'',alt:r.alt_name||'',loc:r.location_name||'',st:r.state||'',di:r.district||'',pc:r.postcode||'',ad:r.full_address||''});
+const uniq=k=>[...new Set(SITES.map(s=>s[k]))].sort();
+function opts(id,label,vals){$(id).innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option>'+E(v)+'</option>').join('')}
+function fillDi(){const st=$('#st').value;opts('#di','All districts',[...new Set(SITES.filter(s=>!st||s.st==st).map(s=>s.di))].sort())}
+function banner(t){$('#banner').textContent=t}
+function render(){
+ const q=$('#q').value.trim().toLowerCase(),st=$('#st').value,di=$('#di').value,sp=$('#sp').value,it=$('#it').value,vs=$('#vs').value;
+ const list=SITES.filter(s=>(!st||s.st==st)&&(!di||s.di==di)&&(!sp||s.sp==sp)&&(!it||s.it==it)&&(!vs||(vs=='v')==!!visits[s.id])&&(!q||s.h.includes(q)));
+ const done=SITES.filter(s=>visits[s.id]).length;
+ $('#vc').textContent=done;$('#vt').textContent='of '+SITES.length+' sites visited';$('#pb').style.width=(done/SITES.length*100)+'%';
+ $('#cnt').textContent=list.length+' site'+(list.length==1?'':'s')+' shown, '+list.filter(s=>visits[s.id]).length+' visited';
+ $('#list').innerHTML=list.length?list.slice(0,shown).map(row).join(''):'<li class="empty">No sites match these filters. Clear the search or choose another state.</li>';
+ $('#more').hidden=list.length<=shown;
+}
+function row(s){
+ const v=visits[s.id],map='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.n+' '+s.ad);
+ let who='';
+ if(v){const d=v.at?new Date(v.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
+  who='<div class="who">Visited by '+E(names[v.by]||'a team member')+(d?' on '+E(d):'')+'</div><textarea data-note="'+s.id+'" placeholder="Add a note about this visit">'+E(v.note||'')+'</textarea>'}
+ return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span><span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span><span>'+E(s.id)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+who+'</div></li>'
+}
+
+
+try{myName=localStorage.getItem('visitor')||''}catch(e){}
+$('#nm').value=myName;
+$('#nm').addEventListener('change',()=>{myName=$('#nm').value.trim();try{localStorage.setItem('visitor',myName)}catch(e){}});
+async function refreshVisits(){
+ const r=await sb.from('visits').select('*');
+ if(r.error){banner('Could not load visits: '+r.error.message);return}
+ visits={};r.data.forEach(v=>{visits[v.site_id]={by:v.visited_by_name,at:v.visited_at,note:v.note};names[v.visited_by_name]=v.visited_by_name});
+ render();
+}
+async function toggle(id){
+ if(!visits[id]&&!myName){banner('Enter your name at the top before ticking a site.');$('#nm').focus();return}
+ const r=visits[id]?await sb.from('visits').delete().eq('site_id',id):await sb.from('visits').insert({site_id:id,visited_by_name:myName});
+ if(r.error)banner('Could not save: '+r.error.message);else banner('');
+ refreshVisits();
+}
+async function load(){
+ const s=await sb.from('sites').select('*').order('id').limit(5000);
+ if(s.error){banner('Could not load sites: '+s.error.message);return}
+ SITES=s.data.map(map);SITES.forEach(x=>x.h=[x.n,x.loc,x.ad,x.id,x.pc,x.alt].join(' ').toLowerCase());
+ opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','All types',uniq('it'));
+ await refreshVisits();
+ sb.channel('visits-live').on('postgres_changes',{event:'*',schema:'public',table:'visits'},refreshVisits).subscribe();
+}
+$('#list').addEventListener('click',e=>{const b=e.target.closest('.tick');if(b)toggle(b.dataset.id)});
+$('#list').addEventListener('change',async e=>{const t=e.target.closest('[data-note]');
+ if(t){const r=await sb.from('visits').update({note:t.value}).eq('site_id',t.dataset.note);if(r.error)banner('Could not save the note: '+r.error.message)}});
+['q','st','di','sp','it','vs'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(id=='st')fillDi();shown=100;render()}));
+$('#mb').onclick=()=>{shown+=100;render()};
+$('#exp').onclick=()=>{
+ const c=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+ const rows=[['Site ID','Outlet','Provider','State','District','Address','Visited by','Visited at','Note']].concat(SITES.filter(s=>visits[s.id]).map(s=>{const v=visits[s.id];return [s.id,s.n,s.sp,s.st,s.di,s.ad,names[v.by]||'',v.at,v.note]}));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(c).join(',')).join('\n')],{type:'text/csv'}));a.download='visited-sites.csv';a.click()};
+load();
+</script>
+</body>
+</html>
