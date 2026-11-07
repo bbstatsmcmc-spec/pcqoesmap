@@ -3,18 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script><title>Infrastructure Visit Tracker</title>
+<script>
+try{const theme=localStorage.getItem('pcqoes-theme');if(theme==='light'||theme==='dark')document.documentElement.dataset.theme=theme}catch(e){}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script><title>PCQoES Infrastructure Checklist</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
-:root{--bg:#EEF1EC;--sf:#FBFCFA;--ink:#17251F;--mu:#5B6B63;--ln:#D5DCD3;--ok:#0E7C66;--okbg:#E1F1EB;--pn:#B86F00;
+:root{--bg:#EEF1EC;--sf:#FBFCFA;--ink:#17251F;--mu:#5B6B63;--ln:#D5DCD3;--ok:#0E7C66;--okbg:#E1F1EB;--pn:#B86F00;color-scheme:light;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101916;--sf:#17231F;--ink:#E6EEE9;--mu:#93A59B;--ln:#2A3A34;--ok:#3CC9A8;--okbg:#18322B;--pn:#E0A33A;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#101916;--sf:#17231F;--ink:#E6EEE9;--mu:#93A59B;--ln:#2A3A34;--ok:#3CC9A8;--okbg:#18322B;--pn:#E0A33A;color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 "Instrument Sans",system-ui,sans-serif}
 .wrap{max-width:900px;margin:0 auto;padding:20px 16px 48px}
 h1{font:800 clamp(26px,5vw,38px)/1.05 "Bricolage Grotesque",system-ui,sans-serif;margin:0 0 4px;letter-spacing:-.02em}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+.page-head h1{flex:1}
+.theme-switch{display:flex;align-items:center;gap:6px;flex-shrink:0;padding:5px 0;cursor:pointer;color:var(--mu);font-size:13px}
+.theme-switch input{position:absolute;width:1px;height:1px;opacity:0}
+.switch-track{width:42px;height:24px;padding:3px;border:1px solid var(--ln);border-radius:20px;background:var(--ln);transition:background .2s}
+.switch-thumb{display:block;width:16px;height:16px;border-radius:50%;background:var(--sf);box-shadow:0 1px 3px #0003;transition:transform .2s}
+.theme-switch input:checked+.switch-track{background:var(--ok);border-color:var(--ok)}
+.theme-switch input:checked+.switch-track .switch-thumb{transform:translateX(18px)}
+.theme-switch input:focus-visible+.switch-track{outline:2px solid var(--ok);outline-offset:3px}
 .lead{color:var(--mu);margin:0 0 18px}
 .prog{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:14px 16px;margin-bottom:14px}
 .big{font:800 34px/1 "Bricolage Grotesque",system-ui,sans-serif}
@@ -43,14 +56,15 @@ ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 a{color:var(--ok)}
 textarea{margin-top:6px;min-height:52px;resize:vertical}
 [hidden]{display:none!important}.nmrow{max-width:360px;margin:0 0 12px}.empty{text-align:center;color:var(--mu);padding:32px 0}
+@media(max-width:420px){.page-head{gap:8px}.theme-switch{gap:4px;font-size:12px}.switch-track{width:38px}.theme-switch input:checked+.switch-track .switch-thumb{transform:translateX(14px)}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Infrastructure Visit Tracker</h1>
-<p class="lead">Find a site, check the details, tick it once visited. Everyone with the link sees the same progress.</p>
+<div class="page-head"><h1>PCQoES Infrastructure Checklist</h1><label class="theme-switch"><span aria-hidden="true">☀</span><input id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span aria-hidden="true">☾</span></label></div>
+<p class="lead">Find a site, check the details, tick it once visited.</p>
 <div id="banner" role="status"></div>
-<div class="nmrow"><input id="nm" maxlength="60" placeholder="Your name (shown on the sites you tick)" autocomplete="name" aria-label="Your name"></div><div id="app"><div class="prog"><div class="big"><span id="vc">0</span><small id="vt"></small></div><div class="bar"><i id="pb"></i></div></div>
+<div class="nmrow"><select id="nm" aria-label="Your name"><option value="">Select your name</option><option>Mohamad Hairy Halib</option><option>Syuhada Asri</option><option>Siti Farhanah Md Sam</option><option>Azilawati Masri</option><option>Nur Izzati Mohd Zaib</option><option>Putri Nur Syarfa Maizan</option><option>Wan Nurwajihah Wan Anuar</option><option>Muhammad Izzat Kamaruddin</option><option>Monalisatul Akida Mohd Khamis</option><option>Nor Faiz Razali</option><option>Muhammad Alif Zahari</option><option>Gs. Hazrul Nizam Ismail</option><option>Putera Ameer Haziq Azwira</option></select></div><div id="app"><div class="prog"><div class="big"><span id="vc">0</span><small id="vt"></small></div><div class="bar"><i id="pb"></i></div></div>
 <div class="filters">
 <input id="q" type="search" placeholder="Search outlet, address, postcode or site ID" aria-label="Search">
 <select id="st" aria-label="State"></select><select id="di" aria-label="District"></select>
@@ -68,6 +82,20 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:f
 const $=s=>document.querySelector(s);
 const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let SITES=[],visits={},names={},db=true,shown=100,myName='';
+function updateThemeToggle(){
+ const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);
+ $('#theme-toggle').checked=dark;
+}
+$('#theme-toggle').addEventListener('change',()=>{
+ const theme=$('#theme-toggle').checked?'dark':'light';
+ document.documentElement.dataset.theme=theme;
+ try{localStorage.setItem('pcqoes-theme',theme)}catch(e){}
+ updateThemeToggle();
+});
+updateThemeToggle();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+ if(!document.documentElement.dataset.theme)updateThemeToggle();
+});
 const map=r=>({id:r.id,sp:r.service_provider||'',it:r.infra_type||'',pt:r.pudo_type||'',n:r.outlet_name||'',alt:r.alt_name||'',loc:r.location_name||'',st:r.state||'',di:r.district||'',pc:r.postcode||'',ad:r.full_address||''});
 const uniq=k=>[...new Set(SITES.map(s=>s[k]))].sort();
 function opts(id,label,vals){$(id).innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option>'+E(v)+'</option>').join('')}
@@ -101,7 +129,7 @@ async function refreshVisits(){
  render();
 }
 async function toggle(id){
- if(!visits[id]&&!myName){banner('Enter your name at the top before ticking a site.');$('#nm').focus();return}
+ if(!visits[id]&&!myName){banner('Select your name at the top before ticking a site.');$('#nm').focus();return}
  const r=visits[id]?await sb.from('visits').delete().eq('site_id',id):await sb.from('visits').insert({site_id:id,visited_by_name:myName});
  if(r.error)banner('Could not save: '+r.error.message);else banner('');
  refreshVisits();
