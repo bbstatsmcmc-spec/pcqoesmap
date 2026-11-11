@@ -51,6 +51,7 @@ ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .nm{font-weight:600;font-size:16px}
 .sub{color:var(--mu);font-size:14px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tags .svc{background:var(--okbg);border-color:var(--ok);color:var(--ok);font-weight:600}
 .tags span{border:1px solid var(--ln);border-radius:20px;padding:1px 9px;font-size:12.5px;color:var(--mu)}
 .who{color:var(--ok);font-weight:500;font-size:14px}
 a{color:var(--ok)}
@@ -68,7 +69,7 @@ textarea{margin-top:6px;min-height:52px;resize:vertical}
 <div class="filters">
 <input id="q" type="search" placeholder="Search outlet, address, postcode or site ID" aria-label="Search">
 <select id="st" aria-label="State"></select><select id="di" aria-label="District"></select>
-<select id="sp" aria-label="Service provider"></select><select id="it" aria-label="Infrastructure type"></select>
+<select id="sp" aria-label="Service provider"></select><select id="it" aria-label="Infrastructure type"></select><select id="tb" aria-label="Service type"></select>
 <select id="vs" aria-label="Visit status"><option value="">All sites</option><option value="p">Not visited</option><option value="v">Visited</option></select>
 </div>
 <div class="bar2"><span id="cnt"></span><button class="btn" id="exp">Export visited (CSV)</button></div>
@@ -96,14 +97,14 @@ updateThemeToggle();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
  if(!document.documentElement.dataset.theme)updateThemeToggle();
 });
-const map=r=>({id:r.id,sp:r.service_provider||'',it:r.infra_type||'',pt:r.pudo_type||'',n:r.outlet_name||'',alt:r.alt_name||'',loc:r.location_name||'',st:r.state||'',di:r.district||'',pc:r.postcode||'',ad:r.full_address||''});
+const map=r=>({id:r.id,sp:r.service_provider||'',it:r.infra_type||'',pt:r.pudo_type||'',n:r.outlet_name||'',alt:r.alt_name||'',loc:r.location_name||'',st:r.state||'',di:r.district||'',pc:r.postcode||'',ad:r.full_address||'',tab:r.source_tab||r.category||''});
 const uniq=k=>[...new Set(SITES.map(s=>s[k]))].sort();
 function opts(id,label,vals){$(id).innerHTML='<option value="">'+label+'</option>'+vals.map(v=>'<option>'+E(v)+'</option>').join('')}
 function fillDi(){const st=$('#st').value;opts('#di','All districts',[...new Set(SITES.filter(s=>!st||s.st==st).map(s=>s.di))].sort())}
 function banner(t){$('#banner').textContent=t}
 function render(){
- const q=$('#q').value.trim().toLowerCase(),st=$('#st').value,di=$('#di').value,sp=$('#sp').value,it=$('#it').value,vs=$('#vs').value;
- const list=SITES.filter(s=>(!st||s.st==st)&&(!di||s.di==di)&&(!sp||s.sp==sp)&&(!it||s.it==it)&&(!vs||(vs=='v')==!!visits[s.id])&&(!q||s.h.includes(q)));
+ const q=$('#q').value.trim().toLowerCase(),st=$('#st').value,di=$('#di').value,sp=$('#sp').value,it=$('#it').value,tb=$('#tb').value,vs=$('#vs').value;
+ const list=SITES.filter(s=>(!st||s.st==st)&&(!di||s.di==di)&&(!sp||s.sp==sp)&&(!it||s.it==it)&&(!tb||s.tab==tb)&&(!vs||(vs=='v')==!!visits[s.id])&&(!q||s.h.includes(q)));
  const done=SITES.filter(s=>visits[s.id]).length;
  $('#vc').textContent=done;$('#vt').textContent='of '+SITES.length+' sites visited';$('#pb').style.width=(done/SITES.length*100)+'%';
  $('#cnt').textContent=list.length+' site'+(list.length==1?'':'s')+' shown, '+list.filter(s=>visits[s.id]).length+' visited';
@@ -115,15 +116,20 @@ function row(s){
  let who='';
  if(v){const d=v.at?new Date(v.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
   who='<div class="who">Visited by '+E(names[v.by]||'a team member')+(d?' on '+E(d):'')+'</div><textarea data-note="'+s.id+'" placeholder="Add a note about this visit">'+E(v.note||'')+'</textarea>'}
- return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span><span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span><span>'+E(s.id)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+who+'</div></li>'
+ return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+'<span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span><span>'+E(s.id)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+who+'</div></li>'
 }
 
 
 try{myName=localStorage.getItem('visitor')||''}catch(e){}
 $('#nm').value=myName;
 $('#nm').addEventListener('change',()=>{myName=$('#nm').value.trim();try{localStorage.setItem('visitor',myName)}catch(e){}});
+async function fetchAll(table,order){
+ let all=[],from=0;
+ while(true){const r=await sb.from(table).select('*').order(order).range(from,from+999);
+  if(r.error)return r;all=all.concat(r.data);if(r.data.length<1000)return {data:all};from+=1000}
+}
 async function refreshVisits(){
- const r=await sb.from('visits').select('*');
+ const r=await fetchAll('visits','site_id');
  if(r.error){banner('Could not load visits: '+r.error.message);return}
  visits={};r.data.forEach(v=>{visits[v.site_id]={by:v.visited_by_name,at:v.visited_at,note:v.note};names[v.visited_by_name]=v.visited_by_name});
  render();
@@ -135,21 +141,21 @@ async function toggle(id){
  refreshVisits();
 }
 async function load(){
- const s=await sb.from('sites').select('*').order('id').limit(5000);
+ const s=await fetchAll('sites','id');
  if(s.error){banner('Could not load sites: '+s.error.message);return}
  SITES=s.data.map(map);SITES.forEach(x=>x.h=[x.n,x.loc,x.ad,x.id,x.pc,x.alt].join(' ').toLowerCase());
- opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','All types',uniq('it'));
+ opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','All types',uniq('it'));opts('#tb','All service types',uniq('tab').filter(Boolean));
  await refreshVisits();
  sb.channel('visits-live').on('postgres_changes',{event:'*',schema:'public',table:'visits'},refreshVisits).subscribe();
 }
 $('#list').addEventListener('click',e=>{const b=e.target.closest('.tick');if(b)toggle(b.dataset.id)});
 $('#list').addEventListener('change',async e=>{const t=e.target.closest('[data-note]');
  if(t){const r=await sb.from('visits').update({note:t.value}).eq('site_id',t.dataset.note);if(r.error)banner('Could not save the note: '+r.error.message)}});
-['q','st','di','sp','it','vs'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(id=='st')fillDi();shown=100;render()}));
+['q','st','di','sp','it','tb','vs'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(id=='st')fillDi();shown=100;render()}));
 $('#mb').onclick=()=>{shown+=100;render()};
 $('#exp').onclick=()=>{
  const c=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
- const rows=[['Site ID','Outlet','Provider','State','District','Address','Visited by','Visited at','Note']].concat(SITES.filter(s=>visits[s.id]).map(s=>{const v=visits[s.id];return [s.id,s.n,s.sp,s.st,s.di,s.ad,names[v.by]||'',v.at,v.note]}));
+ const rows=[['Site ID','Outlet','Provider','Service Type','State','District','Address','Visited by','Visited at','Note']].concat(SITES.filter(s=>visits[s.id]).map(s=>{const v=visits[s.id];return [s.id,s.n,s.sp,s.tab,s.st,s.di,s.ad,names[v.by]||'',v.at,v.note]}));
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(c).join(',')).join('\n')],{type:'text/csv'}));a.download='visited-sites.csv';a.click()};
 load();
 </script>
