@@ -51,6 +51,14 @@ ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .nm{font-weight:600;font-size:16px}
 .sub{color:var(--mu);font-size:14px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.cmpwrap{margin-top:8px}
+.cmp{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:4px 0;cursor:pointer;color:var(--mu);font-size:14px}
+.cmp .sw{width:40px;height:22px;border-radius:12px;background:var(--ln);border:1px solid var(--ln);padding:2px;transition:background .2s}
+.cmp .sw i{display:block;width:16px;height:16px;border-radius:50%;background:var(--sf);box-shadow:0 1px 3px #0003;transition:transform .2s}
+.cmp[aria-checked=true]{color:var(--ok);font-weight:600}
+.cmp[aria-checked=true] .sw{background:var(--ok);border-color:var(--ok)}
+.cmp[aria-checked=true] .sw i{transform:translateX(18px)}
+.big.c2{font-size:24px;margin-top:14px}.bar.b2 i{background:var(--pn)}
 .tags .svc{background:var(--okbg);border-color:var(--ok);color:var(--ok);font-weight:600}
 .tags span{border:1px solid var(--ln);border-radius:20px;padding:1px 9px;font-size:12.5px;color:var(--mu)}
 .who{color:var(--ok);font-weight:500;font-size:14px}
@@ -63,16 +71,16 @@ textarea{margin-top:6px;min-height:52px;resize:vertical}
 <body>
 <div class="wrap">
 <div class="page-head"><h1>PCQoES Infrastructure Checklist</h1><label class="theme-switch"><span aria-hidden="true">☀</span><input id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode"><span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span><span aria-hidden="true">☾</span></label></div>
-<p class="lead">Find a site, check the details, tick it once visited.</p>
+<p class="lead">Find a site, check the details, tick it once visited, and switch it to Completed when the work is done.</p>
 <div id="banner" role="status"></div>
-<div class="nmrow"><select id="nm" aria-label="Your name"><option value="">Select your name</option><option>Mohamad Hairy Halib</option><option>Syuhada Asri</option><option>Siti Farhanah Md Sam</option><option>Azilawati Masri</option><option>Nur Izzati Mohd Zaib</option><option>Putri Nur Syarfa Maizan</option><option>Wan Nurwajihah Wan Anuar</option><option>Muhammad Izzat Kamaruddin</option><option>Monalisatul Akida Mohd Khamis</option><option>Nor Faiz Razali</option><option>Muhammad Alif Zahari</option><option>Gs. Hazrul Nizam Ismail</option><option>Putera Ameer Haziq Azwira</option></select></div><div id="app"><div class="prog"><div class="big"><span id="vc">0</span><small id="vt"></small></div><div class="bar"><i id="pb"></i></div></div>
+<div class="nmrow"><select id="nm" aria-label="Your name"><option value="">Select your name</option><option>Mohamad Hairy Halib</option><option>Syuhada Asri</option><option>Siti Farhanah Md Sam</option><option>Azilawati Masri</option><option>Nur Izzati Mohd Zaib</option><option>Putri Nur Syarfa Maizan</option><option>Wan Nurwajihah Wan Anuar</option><option>Muhammad Izzat Kamaruddin</option><option>Monalisatul Akida Mohd Khamis</option><option>Nor Faiz Razali</option><option>Muhammad Alif Zahari</option><option>Gs. Hazrul Nizam Ismail</option><option>Putera Ameer Haziq Azwira</option></select></div><div id="app"><div class="prog"><div class="big"><span id="vc">0</span><small id="vt"></small></div><div class="bar"><i id="pb"></i></div><div class="big c2"><span id="cc">0</span><small id="ct"></small></div><div class="bar b2"><i id="pb2"></i></div></div>
 <div class="filters">
 <input id="q" type="search" placeholder="Search outlet, address, postcode or site ID" aria-label="Search">
 <select id="st" aria-label="State"></select><select id="di" aria-label="District"></select>
 <select id="sp" aria-label="Service provider"></select><select id="it" aria-label="Infrastructure type"></select><select id="tb" aria-label="Service type"></select>
-<select id="vs" aria-label="Visit status"><option value="">All sites</option><option value="p">Not visited</option><option value="v">Visited</option></select>
+<select id="vs" aria-label="Visit status"><option value="">All sites</option><option value="p">Not visited</option><option value="v">Visited</option></select><select id="cs" aria-label="Completion status"><option value="">Completed and not completed</option><option value="c">Completed</option><option value="n">Not completed</option></select>
 </div>
-<div class="bar2"><span id="cnt"></span><button class="btn" id="exp">Export visited (CSV)</button></div>
+<div class="bar2"><span id="cnt"></span><button class="btn" id="exp">Export progress (CSV)</button></div>
 <ul id="list"></ul>
 <div class="empty" id="more" hidden><button class="btn" id="mb">Show more</button></div></div>
 </div>
@@ -82,7 +90,7 @@ const SUPABASE_KEY='sb_publishable_hjM2twi6352gS_sgeUoZHw_GYQXA3Su';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}});
 const $=s=>document.querySelector(s);
 const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let SITES=[],visits={},names={},db=true,shown=100,myName='';
+let comp={},SITES=[],visits={},names={},db=true,shown=100,myName='';
 function updateThemeToggle(){
  const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);
  $('#theme-toggle').checked=dark;
@@ -103,20 +111,23 @@ function opts(id,label,vals){$(id).innerHTML='<option value="">'+label+'</option
 function fillDi(){const st=$('#st').value;opts('#di','All districts',[...new Set(SITES.filter(s=>!st||s.st==st).map(s=>s.di))].sort())}
 function banner(t){$('#banner').textContent=t}
 function render(){
- const q=$('#q').value.trim().toLowerCase(),st=$('#st').value,di=$('#di').value,sp=$('#sp').value,it=$('#it').value,tb=$('#tb').value,vs=$('#vs').value;
- const list=SITES.filter(s=>(!st||s.st==st)&&(!di||s.di==di)&&(!sp||s.sp==sp)&&(!it||s.it==it)&&(!tb||s.tab==tb)&&(!vs||(vs=='v')==!!visits[s.id])&&(!q||s.h.includes(q)));
+ const q=$('#q').value.trim().toLowerCase(),st=$('#st').value,di=$('#di').value,sp=$('#sp').value,it=$('#it').value,tb=$('#tb').value,vs=$('#vs').value,cs=$('#cs').value;
+ const list=SITES.filter(s=>(!st||s.st==st)&&(!di||s.di==di)&&(!sp||s.sp==sp)&&(!it||s.it==it)&&(!tb||s.tab==tb)&&(!cs||(cs=='c')==!!comp[s.id])&&(!vs||(vs=='v')==!!visits[s.id])&&(!q||s.h.includes(q)));
  const done=SITES.filter(s=>visits[s.id]).length;
  $('#vc').textContent=done;$('#vt').textContent='of '+SITES.length+' sites visited';$('#pb').style.width=(done/SITES.length*100)+'%';
- $('#cnt').textContent=list.length+' site'+(list.length==1?'':'s')+' shown, '+list.filter(s=>visits[s.id]).length+' visited';
+ const cdn=SITES.filter(s=>comp[s.id]).length;$('#cc').textContent=cdn;$('#ct').textContent='of '+SITES.length+' sites completed';$('#pb2').style.width=(cdn/SITES.length*100)+'%';
+ $('#cnt').textContent=list.length+' site'+(list.length==1?'':'s')+' shown, '+list.filter(s=>visits[s.id]).length+' visited, '+list.filter(s=>comp[s.id]).length+' completed';
  $('#list').innerHTML=list.length?list.slice(0,shown).map(row).join(''):'<li class="empty">No sites match these filters. Clear the search or choose another state.</li>';
  $('#more').hidden=list.length<=shown;
 }
+function cmpUI(s){const c=comp[s.id],d=c&&c.at?new Date(c.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
+ return '<div class="cmpwrap"><button class="cmp" role="switch" aria-checked="'+!!c+'" data-cid="'+s.id+'" aria-label="Completed: '+E(s.n)+'"'+(db?'':' disabled')+'><span class="sw"><i></i></span>'+(c?'Completed':'Not completed')+'</button>'+(c?'<div class="who">Completed by '+E(names[c.by]||'a team member')+(d?' on '+E(d):'')+'</div>':'')+'</div>'}
 function row(s){
  const v=visits[s.id],map='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.n+' '+s.ad);
  let who='';
  if(v){const d=v.at?new Date(v.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
   who='<div class="who">Visited by '+E(names[v.by]||'a team member')+(d?' on '+E(d):'')+'</div><textarea data-note="'+s.id+'" placeholder="Add a note about this visit">'+E(v.note||'')+'</textarea>'}
- return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+'<span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span><span>'+E(s.id)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+who+'</div></li>'
+ return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+'<span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span><span>'+E(s.id)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+cmpUI(s)+who+'</div></li>'
 }
 
 
@@ -134,6 +145,18 @@ async function refreshVisits(){
  visits={};r.data.forEach(v=>{visits[v.site_id]={by:v.visited_by_name,at:v.visited_at,note:v.note};names[v.visited_by_name]=v.visited_by_name});
  render();
 }
+async function refreshComp(){
+ const r=await fetchAll('completions','site_id');
+ if(r.error){banner('Could not load completion status: '+r.error.message);return}
+ comp={};r.data.forEach(c=>{comp[c.site_id]={by:c.completed_by_name,at:c.completed_at};names[c.completed_by_name]=c.completed_by_name});
+ render();
+}
+async function toggleComp(id){
+ if(!comp[id]&&!myName){banner('Select your name at the top before marking a site completed.');$('#nm').focus();return}
+ const r=comp[id]?await sb.from('completions').delete().eq('site_id',id):await sb.from('completions').insert({site_id:id,completed_by_name:myName});
+ if(r.error)banner('Could not save: '+r.error.message);else banner('');
+ refreshComp();
+}
 async function toggle(id){
  if(!visits[id]&&!myName){banner('Select your name at the top before ticking a site.');$('#nm').focus();return}
  const r=visits[id]?await sb.from('visits').delete().eq('site_id',id):await sb.from('visits').insert({site_id:id,visited_by_name:myName});
@@ -145,18 +168,20 @@ async function load(){
  if(s.error){banner('Could not load sites: '+s.error.message);return}
  SITES=s.data.map(map);SITES.forEach(x=>x.h=[x.n,x.loc,x.ad,x.id,x.pc,x.alt].join(' ').toLowerCase());
  opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','All types',uniq('it'));opts('#tb','All service types',uniq('tab').filter(Boolean));
- await refreshVisits();
+ await refreshVisits();await refreshComp();
+ sb.channel('comp-live').on('postgres_changes',{event:'*',schema:'public',table:'completions'},refreshComp).subscribe();
  sb.channel('visits-live').on('postgres_changes',{event:'*',schema:'public',table:'visits'},refreshVisits).subscribe();
 }
 $('#list').addEventListener('click',e=>{const b=e.target.closest('.tick');if(b)toggle(b.dataset.id)});
+$('#list').addEventListener('click',e=>{const b=e.target.closest('.cmp');if(b)toggleComp(b.dataset.cid)});
 $('#list').addEventListener('change',async e=>{const t=e.target.closest('[data-note]');
  if(t){const r=await sb.from('visits').update({note:t.value}).eq('site_id',t.dataset.note);if(r.error)banner('Could not save the note: '+r.error.message)}});
-['q','st','di','sp','it','tb','vs'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(id=='st')fillDi();shown=100;render()}));
+['q','st','di','sp','it','tb','vs','cs'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(id=='st')fillDi();shown=100;render()}));
 $('#mb').onclick=()=>{shown+=100;render()};
 $('#exp').onclick=()=>{
  const c=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
- const rows=[['Site ID','Outlet','Provider','Service Type','State','District','Address','Visited by','Visited at','Note']].concat(SITES.filter(s=>visits[s.id]).map(s=>{const v=visits[s.id];return [s.id,s.n,s.sp,s.tab,s.st,s.di,s.ad,names[v.by]||'',v.at,v.note]}));
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(c).join(',')).join('\n')],{type:'text/csv'}));a.download='visited-sites.csv';a.click()};
+ const rows=[['Site ID','Outlet','Provider','Service Type','State','District','Address','Visited by','Visited at','Note','Completed','Completed by','Completed at']].concat(SITES.filter(s=>visits[s.id]||comp[s.id]).map(s=>{const v=visits[s.id]||{},c=comp[s.id];return [s.id,s.n,s.sp,s.tab,s.st,s.di,s.ad,names[v.by]||'',v.at||'',v.note||'',c?'Yes':'No',c?names[c.by]:'',c?c.at:'']}));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(c).join(',')).join('\n')],{type:'text/csv'}));a.download='site-progress.csv';a.click()};
 load();
 </script>
 </body>
