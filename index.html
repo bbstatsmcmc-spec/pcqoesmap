@@ -168,7 +168,7 @@ async function load(){
  const s=await fetchAll('sites','id');
  if(s.error){banner('Could not load sites: '+s.error.message);return}
  SITES=s.data.map(map);SITES.forEach(x=>x.h=[x.n,x.loc,x.ad,x.id,x.pc,x.alt].join(' ').toLowerCase());
- opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','All types',uniq('it'));opts('#tb','All service types',uniq('tab').filter(Boolean));
+ opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#tb','All service types',uniq('tab').filter(Boolean));
  await refreshVisits();await refreshComp();
  sb.channel('comp-live').on('postgres_changes',{event:'*',schema:'public',table:'completions'},refreshComp).subscribe();
  sb.channel('visits-live').on('postgres_changes',{event:'*',schema:'public',table:'visits'},refreshVisits).subscribe();
