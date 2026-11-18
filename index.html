@@ -135,7 +135,7 @@ const stat=k=>k?(comp[k]?'Completed':visits[k]?'Visited':'In checklist'):'';
 function altUI(s){let h='';
  const l=bySrc[s.id];
  if(l&&l.length)h+='<div class="altbox"><b>Alternative sites ('+l.length+')</b>'+l.map(a=>{const st=stat(a.alt_site_id);
-  return '<div class="altitem"><div><b>'+E(a.alt_name)+'</b>'+(st?'<span class="altst">'+st+'</span>':'')+'</div><div class="sub">'+E(a.provider)+'</div><div class="sub">'+E(a.alt_address)+'</div><div class="sub">'+km(a)+'</div><div class="altlinks"><a href="'+gmap(a)+'" target="_blank" rel="noopener">Open in Google Maps</a>'+(a.alt_site_id?' <a href="#site-'+a.alt_site_id+'" data-goto="'+a.alt_site_id+'">Go to this site in the checklist</a>':' +'</div></div>'}).join('')+'</div>';
+  return '<div class="altitem"><div><b>'+E(a.alt_name)+'</b>'+(st?'<span class="altst">'+st+'</span>':'')+'</div><div class="sub">'+E(a.provider)+'</div><div class="sub">'+E(a.alt_address)+'</div><div class="sub">'+km(a)+'</div><div class="altlinks"><a href="'+gmap(a)+'" target="_blank" rel="noopener">Open in Google Maps</a>'+(a.alt_site_id?' <a href="#site-'+a.alt_site_id+'" data-goto="'+a.alt_site_id+'">Go to this site in the checklist</a>':' <span class="sub">(not in our checklist)</span>')+'</div></div>'}).join('')+'</div>';
  (byAltSite[s.id]||[]).forEach(a=>{h+='<div class="altbox"><b>Nearest alternative for 7-Eleven</b><div>'+E(a.src_name)+'</div><div class="sub">'+E(a.src_address)+'</div><div class="sub">'+km(a)+(a.src_site_id?' <a href="#site-'+a.src_site_id+'" data-goto="'+a.src_site_id+'">Go to this 7-Eleven</a>':'')+'</div></div>'});
  return h}
 function gotoSite(id){
