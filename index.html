@@ -128,7 +128,7 @@ function row(s){
  let who='';
  if(v){const d=v.at?new Date(v.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
   who='<div class="who">Visited by '+E(names[v.by]||'a team member')+(d?' on '+E(d):'')+'</div><textarea data-note="'+s.id+'" placeholder="Add a note about this visit">'+E(v.note||'')+'</textarea>'}
- return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+(s.pic=='Alternative'?'<span class="alt">Alternative</span>':'')+'<span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span><span>'+E(s.id)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+cmpUI(s)+who+'</div></li>'
+ return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+(s.pic=='Alternative'?'<span class="alt">Alternative</span>':'')+'<span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+cmpUI(s)+who+'</div></li>'
 }
 
 
