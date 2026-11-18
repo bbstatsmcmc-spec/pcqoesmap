@@ -51,6 +51,14 @@ ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .nm{font-weight:600;font-size:16px}
 .sub{color:var(--mu);font-size:14px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.altbox{margin-top:8px;padding:8px 10px;border:1px dashed var(--pn);border-radius:8px;font-size:14px}
+.altlinks{margin-top:4px}
+.altbox summary{cursor:pointer}
+.altitem{padding:6px 0;border-top:1px solid var(--ln)}
+.altbox summary+.altitem{border-top:0}
+.altst{font-size:12px;border:1px solid var(--ok);color:var(--ok);border-radius:20px;padding:0 7px;margin-left:4px}
+.row.flash{animation:fl 2.2s}
+@keyframes fl{0%,65%{box-shadow:0 0 0 3px var(--pn)}100%{box-shadow:0 0 0 0 transparent}}
 .cmpwrap{margin-top:8px}
 .cmp{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:4px 0;cursor:pointer;color:var(--mu);font-size:14px}
 .cmp .sw{width:40px;height:22px;border-radius:12px;background:var(--ln);border:1px solid var(--ln);padding:2px;transition:background .2s}
@@ -91,7 +99,7 @@ const SUPABASE_KEY='sb_publishable_hjM2twi6352gS_sgeUoZHw_GYQXA3Su';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false}});
 const $=s=>document.querySelector(s);
 const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let comp={},SITES=[],visits={},names={},db=true,shown=100,myName='';
+let bySrc={},byAltSite={},comp={},SITES=[],visits={},names={},db=true,shown=100,myName='';
 function updateThemeToggle(){
  const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);
  $('#theme-toggle').checked=dark;
@@ -121,6 +129,32 @@ function render(){
  $('#list').innerHTML=list.length?list.slice(0,shown).map(row).join(''):'<li class="empty">No sites match these filters. Clear the search or choose another state.</li>';
  $('#more').hidden=list.length<=shown;
 }
+const gmap=a=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([String(a.alt_name||'').replace(/\|/g,' '),a.alt_address,a.state,'Malaysia'].filter(Boolean).join(', '));
+const km=a=>isFinite(a.d)?a.d.toFixed(2)+' km by road':'';
+const stat=k=>k?(comp[k]?'Completed':visits[k]?'Visited':'In checklist'):'';
+function altUI(s){let h='';
+ const l=bySrc[s.id];
+ if(l&&l.length)h+='<div class="altbox"><b>Alternative sites ('+l.length+')</b>'+l.map(a=>{const st=stat(a.alt_site_id);
+  return '<div class="altitem"><div><b>'+E(a.alt_name)+'</b>'+(st?'<span class="altst">'+st+'</span>':'')+'</div><div class="sub">'+E(a.provider)+'</div><div class="sub">'+E(a.alt_address)+'</div><div class="sub">'+km(a)+'</div><div class="altlinks"><a href="'+gmap(a)+'" target="_blank" rel="noopener">Open in Google Maps</a>'+(a.alt_site_id?' <a href="#site-'+a.alt_site_id+'" data-goto="'+a.alt_site_id+'">Go to this site in the checklist</a>':' <span class="sub">(not in our checklist)</span>')+'</div></div>'}).join('')+'</div>';
+ (byAltSite[s.id]||[]).forEach(a=>{h+='<div class="altbox"><b>Nearest alternative for 7-Eleven</b><div>'+E(a.src_name)+'</div><div class="sub">'+E(a.src_address)+'</div><div class="sub">'+km(a)+(a.src_site_id?' <a href="#site-'+a.src_site_id+'" data-goto="'+a.src_site_id+'">Go to this 7-Eleven</a>':'')+'</div></div>'});
+ return h}
+function gotoSite(id){
+ ['q','st','di','sp','it','tb','vs','cs'].forEach(k=>{const e=$('#'+k);if(e)e.value=''});
+ fillDi();
+ const i=SITES.findIndex(s=>s.id==id);if(i<0){banner('That site is not in the checklist.');return}
+ shown=Math.max(shown,i+10);render();
+ const el=document.getElementById('site-'+id);if(!el)return;
+ el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash');
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-goto]');if(a){e.preventDefault();gotoSite(a.dataset.goto)}});
+async function loadAlts(){
+ let r=await fetchAll('alternatives','id',q=>q.or('src_site_id.not.is.null,alt_site_id.not.is.null'));
+ if(r.error)r=await fetchAll('alternatives','id');
+ if(r.error){banner('Could not load alternatives: '+r.error.message);return}
+ bySrc={};byAltSite={};
+ r.data.forEach(a=>{a.d=parseFloat(a.road_km);if(a.src_site_id)(bySrc[a.src_site_id]=bySrc[a.src_site_id]||[]).push(a);if(a.alt_site_id)(byAltSite[a.alt_site_id]=byAltSite[a.alt_site_id]||[]).push(a)});
+ Object.values(bySrc).forEach(l=>l.sort((x,y)=>x.d-y.d));Object.values(byAltSite).forEach(l=>l.sort((x,y)=>x.d-y.d));render();
+}
 function cmpUI(s){const c=comp[s.id],d=c&&c.at?new Date(c.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
  return '<div class="cmpwrap"><button class="cmp" role="switch" aria-checked="'+!!c+'" data-cid="'+s.id+'" aria-label="Completed: '+E(s.n)+'"'+(db?'':' disabled')+'><span class="sw"><i></i></span>'+(c?'Completed':'Not completed')+'</button>'+(c?'<div class="who">Completed by '+E(names[c.by]||'a team member')+(d?' on '+E(d):'')+'</div>':'')+'</div>'}
 function row(s){
@@ -128,16 +162,16 @@ function row(s){
  let who='';
  if(v){const d=v.at?new Date(v.at).toLocaleString('en-MY',{dateStyle:'medium',timeStyle:'short'}):'';
   who='<div class="who">Visited by '+E(names[v.by]||'a team member')+(d?' on '+E(d):'')+'</div><textarea data-note="'+s.id+'" placeholder="Add a note about this visit">'+E(v.note||'')+'</textarea>'}
- return '<li class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+(s.pic=='Alternative'?'<span class="alt">Alternative</span>':'')+'<span>'+E(s.it)+'</span><span>'+E(s.pt)+'</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+cmpUI(s)+who+'</div></li>'
+ return '<li id="site-'+s.id+'" class="row'+(v?' done':'')+'"><button class="tick" data-id="'+s.id+'" aria-pressed="'+!!v+'" aria-label="Mark '+E(s.n)+' as visited"'+(db?'':' disabled')+'>'+(v?'\u2713':'')+'</button><div><div class="nm">'+E(s.n)+'</div><div class="sub">'+E(s.loc)+', '+E(s.di)+', '+E(s.st)+'</div><div class="tags"><span>'+E(s.sp.replace(/_/g,' '))+'</span>'+(s.tab?'<span class="svc">'+E(s.tab)+'</span>':'')+(s.pic=='Alternative'?'<span class="alt">Alternative</span>':'')+'<span>'+E(s.it)+'</span>+<span>'+E(s.pt)+'</span>+</span></div><div class="sub">'+E(s.ad)+'</div><a href="'+map+'" target="_blank" rel="noopener">Open in Google Maps</a>'+altUI(s)+cmpUI(s)+who+'</div></li>'
 }
 
 
 try{myName=localStorage.getItem('visitor')||''}catch(e){}
 $('#nm').value=myName;
 $('#nm').addEventListener('change',()=>{myName=$('#nm').value.trim();try{localStorage.setItem('visitor',myName)}catch(e){}});
-async function fetchAll(table,order){
+async function fetchAll(table,order,f){
  let all=[],from=0;
- while(true){const r=await sb.from(table).select('*').order(order).range(from,from+999);
+ while(true){let q=sb.from(table).select('*');if(f)q=f(q);const r=await q.order(order).range(from,from+999);
   if(r.error)return r;all=all.concat(r.data);if(r.data.length<1000)return {data:all};from+=1000}
 }
 async function refreshVisits(){
@@ -168,8 +202,8 @@ async function load(){
  const s=await fetchAll('sites','id');
  if(s.error){banner('Could not load sites: '+s.error.message);return}
  SITES=s.data.map(map);SITES.forEach(x=>x.h=[x.n,x.loc,x.ad,x.id,x.pc,x.alt].join(' ').toLowerCase());
- opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','Infrastructure type',uniq('it'));opts('#tb','All service types',uniq('tab').filter(Boolean));
- await refreshVisits();await refreshComp();
+ opts('#st','All states',uniq('st'));fillDi();opts('#sp','All providers',uniq('sp'));opts('#it','All types',uniq('it'));opts('#tb','All service types',uniq('tab').filter(Boolean));
+ await refreshVisits();await refreshComp();await loadAlts();
  sb.channel('comp-live').on('postgres_changes',{event:'*',schema:'public',table:'completions'},refreshComp).subscribe();
  sb.channel('visits-live').on('postgres_changes',{event:'*',schema:'public',table:'visits'},refreshVisits).subscribe();
 }
